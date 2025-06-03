@@ -1,113 +1,88 @@
-Bird song recognition
-==============================
-![Flying bird](http://www.kuwaitbirds.org/sites/default/files/files-misc/birding-bird-shapes-1.jpg)
+鸟类问题
+鸟类鸣叫声的分析和分类是一个非常有趣的问题。
+鸟类有许多类型的声音，而不同类型的声音具有不同的功能。最常见的是歌声和“其他声音”（如叫声）。
+歌声是一种“美妙”的、有旋律的声音类型，鸟类通过它标记领地并吸引伴侣。它通常比“叫声”更复杂和更长。
+叫声类型包括接触、引诱和警报声。接触和吸引叫声用于在飞行或觅食时将鸟类聚集在一起，例如在树冠中，警报声用于警示（例如当捕食者到来时）。这些叫声通常很短且简单。
 
-## Data download
-Analysis and modelling of Polish birds songs. Recordings were downloaded from the - **[xeno-canto.org](https://www.xeno-canto.org/)** which is a website dedicated to sharing bird sounds from all over the world (480k, September 2019). 
+为什么基于声音的鸟类分类会是一个具有挑战性的任务？
+可能会遇到许多问题，包括：
 
-Data can be dowloaded using [this jupyter notebook file](https://github.com/wimlds-trojmiasto/birds/blob/master/notebooks/AM_downloadData.ipynb). 
+背景噪声——特别是在使用城市录制的数据时（例如城市噪音、人声、汽车等） 
 
-Bird have high inter-species variance - same bird species singing in different countries might sound completely different. We searched for 33 classes of birds, but we used it *only* if there was *over 50 recording per class*, we used it for our training.
-In total, we provide experiments with two ways: 
-#### 1) for 19 classes of birds - recorded in Poland, Germany, Slovakia, Czech and Lithuania. 
+多标签分类问题——当同时有许多物种在鸣叫时
 
-* 1 . Found  418  files for  Parusmajor ( 1 )
-* 2 . Found  59  files for  Passerdomesticus ( 3 )
-* 3 . Found  107  files for  Luscinialuscinia ( 4 )
-* 4 . Found  111  files for  Phoenicurusphoenicurus ( 7 )
-* 5 . Found  446  files for  Erithacusrubecula ( 8 )
-* 6 . Found  80  files for  Phoenicurusochruros ( 10 )
-* 7 . Found  134  files for  Sittaeuropaea ( 16 )
-* 8 . Found  105  files for  Alaudaarvensis ( 17 )
-* 9 . Found  216  files for  Phylloscopustrochilus ( 19 )
-* 10 . Found  564  files for  Turdusphilomelos ( 21 )
-* 11 . Found  314  files for  Phylloscopuscollybita ( 22 )
-* 12 . Found  365  files for  Fringillacoelebs ( 23 )
-* 13 . Found  65  files for  Sturnusvulgaris ( 24 )
-* 14 . Found  329  files for  Emberizacitrinella ( 25 )
-* 15 . Found  58  files for  Columbapalumbus ( 26 )
-* 16 . Found  204  files for  Troglodytestroglodytes ( 27 )
-* 17 . Found  53  files for  Cardueliscarduelis ( 30 )
-* 18 . Found  97  files for  Chlorischloris ( 31 )
-* 19 . Found  667  files for  Turdusmerula ( 33 )
+ 不同类型的鸟类鸣叫声（如前面所述） 
 
-#### 2) for 27 classes - recorded worldwide
+物种间的变异性——同一物种在不同地区或国家可能存在鸟类鸣叫声的差异 
 
+数据集问题——由于某些物种的流行度较高，数据可能不平衡，不同物种的录音长度、录音质量（音量、清晰度）也可能存在差异
 
-## Data preprocessing
-The data should be prepared. Each song is cut into 5 second recordings and preprocessed into melspectrograms. The purpose is to normalize dataset to have same size along the whole dataset in one run, and to denoise recordings. Morover, the data is filtered with a high-pass filter. Data can be preprocessed using [this jupyter notebook file](https://github.com/wimlds-trojmiasto/birds/blob/master/notebooks/AM_prepareData.ipynb).
+那么过去是如何解决这些问题的呢？
 
-![melspectrogram](images/Parusmajor12131018_18.png)
-![melspectrogram](images/Phylloscopuscollybita1011061_1.png)
-![melspectrogram](images/Sturnusvulgaris36979916_16.png)
-![melspectrogram](images/Turdusmerula12247510_10.png)
+通过鸟类声音识别来识别鸟类可能是一项困难的任务，但并不意味着不可能。但如何解决这些问题呢？
+为了找到答案，需要深入研究论文，发现大部分工作都是由各种人工智能挑战赛发起的，比如BirdCLEF和DCASE。幸运的是，这些挑战的获胜者通常会描述他们的方法，所以在查看排行榜后，得到了一些有趣的见解：
+几乎所有获胜的解决方案都使用了卷积神经网络（CNN）或循环卷积神经网络（RCNN）。 基于CNN的模型与浅层基于特征的方法之间的差距仍然相当大。 即使许多录音非常嘈杂，CNN仍然能够良好地工作，而不需要任何额外的降噪处理，许多团队声称降噪技术没有帮助。 数据增强技术似乎被广泛使用，特别是在音频处理中使用的时间或频率移位等技术。 一些获胜团队成功地采用了半监督学习方法（伪标签法），一些团队通过模型集成提高了AUC值。
+但是，当我们只有声音录音时，如何应用于从图像中提取特征、进行分类或分割的神经网络设计的CNN呢？梅尔频率倒谱系数（MFCC）是答案。
 
-## Dataset split
-[This file](https://github.com/wimlds-trojmiasto/birds/blob/master/notebooks/AM_splitDataset.ipynb) divides our dataset into train, validation and test set in ratio 8:1:1. We can't use preprogrammed functions to do that, because we have divided each of our files into other smallers (i.e. one sound to six images). Putting images made out of same mp3 file might lead to the data leakage and make our results not trustworthy and biased.
+SOUND_DIR='../data/xeno-canto-dataset-full/Parusmajor/Lithuania/Parusmajor182513.mp3'# Cargue el archivo mp3
+signal, sr = librosa.load(SOUND_DIR,duration=10) # sr = sampling rate# Crea mel-espectrograma
+N_FFT = 1024         
+HOP_SIZE = 1024       
+N_MELS = 128            
+WIN_SIZE = 1024      
+WINDOW_TYPE = 'hann' 
+FEATURE = 'mel'      
+FMIN = 1400 S = librosa.feature.melspectrogram(y=signal,sr=sr,
+                                    n_fft=N_FFT,
+                                    hop_length=HOP_SIZE, 
+                                    n_mels=N_MELS, 
+                                    htk=True, 
+                                    fmin=FMIN, 
+                                    fmax=sr/2) plt.figure(figsize=(10, 4))
+librosa.display.specshow(librosa.power_to_db(S**2,ref=np.max), fmin=FMIN,y_axis='linear')
+plt.colorbar(format='%+2.0f dB')
+plt.show()
+ 
+梅尔尺度频谱图的示例
+它是什么，它是如何工作的？
+每个我们听到的声音都由多个声音频率同时组成。这就是使音频听起来“深沉”的原因。
+声谱图的技巧是在一个图中可视化这些频率，而不仅仅像在波形中那样可视化振幅。梅尔频率刻度是似乎对听众来说彼此之间距离相等的音调音频刻度。这背后的想法与人类听觉方式有关。当我们将这两个想法结合起来，就得到了一个改进的声谱图（梅尔频率倒谱系数），它简单地忽略人类听不到的声音并绘制最重要的部分。
+创建声谱图时，音频长度越长，你可以获得更多的图像信息，但模型可能过拟合的可能性也会增加。如果你的数据中有很多噪声或静音，那么5秒持续时间的音频可能无法捕捉到所需的信息。因此，决定将10秒的音频文件转换为图像（这样可以提高最终模型的准确性10%！）。由于鸟类在高频率上唱歌，因此应用了高通滤波器以去除无用的噪声。 
+信息不足（静音）且以噪声为主的 5s 频谱图示例
+建模
+通过将数据分为训练集（80%）、验证集（10%）和测试集（10%），实现了对最终模型的训练。
+IM_SIZE = (224,224,3) 
+BIRDS = ['0Parus', '1Turdu', '2Passe', '3Lusci', '4Phoen', '5Erith',
+'6Picap', '7Phoen', '8Garru', '9Passe', '10Cocco', '11Sitta','12Alaud', '13Strep', '14Phyll', '15Delic','16Turdu', '17Phyll','18Fring', '19Sturn', '20Ember', '21Colum', '22Trogl', '23Cardu','24Chlor', '25Motac', '26Turdu']
+DATA_PATH = 'data/27_class_10s_2/'
+BATCH_SIZE = 16
 
-## Training 
-We approached the problem of song classification with Convolutional Neural Networks. We have tested it with:
-* Xception 
-* MobileNets
-* EfficientNets
-* Handcrafted CNN's
-* Other
+使用内置的Keras库数据生成器来处理所有声谱图的数据增强和归一化。
 
-## Results
-In progress
+train_datagen = ImageDataGenerator(preprocessing_function=preprocess_input,  
+                                   width_shift_range=0.2,
+                                   height_shift_range=0.2,
+                                   shear_range=0.2,
+                                   zoom_range=0.1,
+                                   fill_mode='nearest')train_batches = train_datagen.flow_from_directory(DATA_PATH+'train',classes=BIRDS, target_size=IM_SIZE, class_mode='categorical', shuffle=True,batch_size=BATCH_SIZE)valid_datagen = ImageDataGenerator(preprocessing_function=preprocess_input)valid_batches = valid_datagen.flow_from_directory(DATA_PATH+'val',classes=BIRDS,target_size=IM_SIZE, class_mode='categorical', shuffle=False, batch_size=BATCH_SIZE)test_datagen = ImageDataGenerator(preprocessing_function=preprocess_input)test_batches = test_datagen.flow_from_directory(DATA_PATH+'test', classes=BIRDS,target_size=IM_SIZE,class_mode='categorical', shuffle=False,batch_size=BATCH_SIZE)
 
+最终的模型是基于EfficientNetB3构建的，包含27个不同的类（鸟类物种），使用Adam优化器，分类交叉熵损失函数和平衡的类权重。学习率会在平台上进行调整。
 
-
-## Other
-Project Organization
-------------
-
-    ├── LICENSE
-    ├── Makefile           <- Makefile with commands like `make data` or `make train`
-    ├── README.md          <- The top-level README for developers using this project.
-    ├── data
-    │   ├── external       <- Data from third party sources.
-    │   ├── interim        <- Intermediate data that has been transformed.
-    │   ├── processed      <- The final, canonical data sets for modeling.
-    │   └── raw            <- The original, immutable data dump.
-    │
-    ├── docs               <- A default Sphinx project; see sphinx-doc.org for details
-    │
-    ├── models             <- Trained and serialized models, model predictions, or model summaries
-    │
-    ├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-    │                         the creator's initials, and a short `-` delimited description, e.g.
-    │                         `1.0-jqp-initial-data-exploration`.
-    │
-    ├── references         <- Data dictionaries, manuals, and all other explanatory materials.
-    │
-    ├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-    │   └── figures        <- Generated graphics and figures to be used in reporting
-    │
-    ├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
-    │                         generated with `pip freeze > requirements.txt`
-    │
-    ├── setup.py           <- makes project pip installable (pip install -e .) so src can be imported
-    ├── src                <- Source code for use in this project.
-    │   ├── __init__.py    <- Makes src a Python module
-    │   │
-    │   ├── data           <- Scripts to download or generate data
-    │   │   └── make_dataset.py
-    │   │
-    │   ├── features       <- Scripts to turn raw data into features for modeling
-    │   │   └── build_features.py
-    │   │
-    │   ├── models         <- Scripts to train models and then use trained models to make
-    │   │   │                 predictions
-    │   │   ├── predict_model.py
-    │   │   └── train_model.py
-    │   │
-    │   └── visualization  <- Scripts to create exploratory and results oriented visualizations
-    │       └── visualize.py
-    │
-    └── tox.ini            <- tox file with settings for running tox; see tox.testrun.org
-
-
---------
-
-<p><small>Project based on the <a target="_blank" href="https://drivendata.github.io/cookiecutter-data-science/">cookiecutter data science project template</a>. #cookiecutterdatascience</small></p>
+# Define la arquitectura de CNNnet = efn.EfficientNetB3(include_top=False,                       weights='imagenet', input_tensor=None,                        input_shape=IM_SIZE)x = net.output 
+x = Flatten()(x) 
+x = Dropout(0.5)(x)output_layer = Dense(len(BIRDS), activation='softmax', name='softmax')(x) 
+net_final = Model(inputs=net.input, outputs=output_layer)      net_final.compile(optimizer=Adam(),                  loss='categorical_crossentropy', metrics=['accuracy'])# Estime los pesos de clase para el conjunto de datos no balanceadoclass_weights = class_weight.compute_class_weight(                'balanced',                 np.unique(train_batches.classes),                  train_batches.classes)# Define las callbacksModelCheck = ModelCheckpoint('models/efficientnet_checkpoint.h5', monitor='val_loss', verbose=0,                               save_best_only=True, save_weights_only=True, mode='auto', period=1)ReduceLR = ReduceLROnPlateau(monitor='val_loss', factor=0.2,                               patience=5, min_lr=3e-4)
+ 
+解决方案简介：音频数据预处理和神经网络模型
+# Entrena el modelonet_final.fit_generator(train_batches,
+                        validation_data = valid_batches,
+                        epochs = 30,
+                        steps_per_epoch= 1596,
+                        class_weight=class_weights, callbacks[ModelCheck,ReduceLR])
+模型的分类报告显示，在测试样本上，该解决方案以87%的准确率预测了正确的鸟类名称，其中：
+11个类的F1分数超过90% 
+8个类的F1分数介于70%和90%之间 
+2个类的F1分数介于50%和70%之间 
+6个类的F1分数低于50%。
+ 
+神经网络模型分类报告
